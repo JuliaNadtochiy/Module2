@@ -10,6 +10,11 @@ import java.text.*;
 /**
  * Containing items and calculating price.
  */
+import java.util.*;
+import java.text.*;
+/**
+ * Containing items and calculating price.
+ */
 public class ShoppingCart {
     public static enum ItemType { NEW, REGULAR, SECOND_FREE, SALE };
     /**
@@ -22,7 +27,7 @@ public class ShoppingCart {
         cart.addItem("Banana", 20.00, 4, ItemType.SECOND_FREE);
         cart.addItem("A long piece of toilet paper", 17.20, 1, ItemType.SALE);
         cart.addItem("Nails", 2.00, 500, ItemType.REGULAR);
-        System.out.println(cart.formatTicket());
+        System.out.println(ShoppingCart.formatTicket(cart.items));
     }
     /**
      * Adds new item.
@@ -64,8 +69,9 @@ public class ShoppingCart {
      * last line: 31 $999050.60
      *
      * if no items in cart returns "No items." string.
+     * @param items
      */
-    public String formatTicket(){
+    public static String formatTicket(List<Item> items){
         if (items.size() == 0)
             return "No items.";
         List<String[]> lines = new ArrayList<String[]>();
@@ -92,20 +98,16 @@ public class ShoppingCart {
         // column max length
         int[] width = new int[]{0,0,0,0,0,0};
         for (String[] line : lines)
-            for (int i = 0; i < line.length; i++)
-                width[i] = (int) Math.max(width[i], line[i].length());
-        for (int i = 0; i < header.length; i++)
-            width[i] = (int) Math.max(width[i], header[i].length());
-        for (int i = 0; i < footer.length; i++)
-            width[i] = (int) Math.max(width[i], footer[i].length());
+            widthCalculate(line, width);
+        widthCalculate(header, width);
+        widthCalculate(footer, width);
         // line length
         int lineLength = width.length - 1;
         for (int w : width)
             lineLength += w;
         StringBuilder sb = new StringBuilder();
         // header
-        for (int i = 0; i < header.length; i++)
-            appendFormatted(sb, header[i], align[i], width[i]);
+        createLine(align, header, width, sb);
         sb.append("\n");
         // separator
         for (int i = 0; i < lineLength; i++)
@@ -113,8 +115,7 @@ public class ShoppingCart {
         sb.append("\n");
         // lines
         for (String[] line : lines) {
-            for (int i = 0; i < line.length; i++)
-                appendFormatted(sb, line[i], align[i], width[i]);
+            createLine(align, line, width, sb);
             sb.append("\n");
         }
         if (lines.size() > 0) {
@@ -124,10 +125,20 @@ public class ShoppingCart {
             sb.append("\n");
         }
         // footer
-        for (int i = 0; i < footer.length; i++)
-            appendFormatted(sb, footer[i], align[i], width[i]);
+        createLine(align, footer, width, sb);
         return sb.toString();
     }
+
+    private static void createLine(int[] align, String[] footer, int[] width, StringBuilder sb) {
+        for (int i = 0; i < footer.length; i++)
+            appendFormatted(sb, footer[i], align[i], width[i]);
+    }
+
+    private static void widthCalculate(String[] footer, int[] width) {
+        for (int i = 0; i < footer.length; i++)
+            width[i] = (int) Math.max(width[i], footer[i].length());
+    }
+
     // --- private section -----------------------------------------------------
     private static final NumberFormat MONEY;
     static {
@@ -140,7 +151,7 @@ public class ShoppingCart {
      * Trims string if its length > width.
      * @param align -1 for align left, 0 for center and +1 for align right.
      */
-    public static void appendFormatted(StringBuilder sb, String value, int align, int width){
+    public static StringBuilder appendFormatted(StringBuilder sb, String value, int align, int width){
         if (value.length() > width)
             value = value.substring(0,width);
         int before = (align == 0)
@@ -153,6 +164,7 @@ public class ShoppingCart {
         while (after-- > 0)
             sb.append(" ");
         sb.append(" ");
+        return sb;
     }
     /**
      * Calculates item's discount.
@@ -178,11 +190,9 @@ public class ShoppingCart {
                 discount = 70;
                 break;
         }
-        if (discount < 80) {
-            discount += quantity / 10;
-            if (discount > 80)
-                discount = 80;
-        }
+        discount += quantity / 10;
+        if (discount > 80)
+            discount = 80;
         return discount;
     }
     /** item info */
